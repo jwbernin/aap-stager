@@ -1,15 +1,15 @@
 [ansiblecontroller]
-aap1.jbho.me ansible_user=root
-aap2.jbho.me ansible_user=root
-aap3.jbho.me ansible_user=root
+controllerhost1
+controllerhost2
+controllerhost3
 
 [ansiblehub]
-pah1.jbho.me ansible_user=root
-pah2.jbho.me ansible_user=root
-pah3.jbho.me ansible_user=root
+pahhost1
+pahhost2
+pahhost3
 
 [ansibledb]
-aap-db.jbho.me ansible_user=root
+dbhost
 
 [automationplatform:children]
 ansiblecontroller
