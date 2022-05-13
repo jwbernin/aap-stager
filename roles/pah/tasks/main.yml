@@ -31,9 +31,9 @@
     key: "{{ lookup('file', '/tmp/sshkey-{{ item }}') }}"
   loop: "{{query('inventory_hostnames','ansiblehub')}}"
 
-- name: Enable Automation Hub repo
+- name: Enable Automation Platform repo
   community.general.rhsm_repository:
-    name: automation-hub-4.2-for-rhel-8-x86_64-rpms
+    name: ansible-automation-platform-2.1-for-rhel-8-x86_64-rpms
 
 # This play will soon be replaced by a 'dnf' module installing the
 # installer bundle package.
@@ -135,4 +135,7 @@
   with_fileglob:
     - "/tmp/sshkey-*"
 
-
+- name: Ensure Ansible package installed
+  package:
+    name: ansible-core
+    state: present

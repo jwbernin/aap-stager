@@ -33,6 +33,20 @@
     name: '*'
     state: latest
 
+- name: Open up PostgreSQL firewall service
+  ansible.posix.firewalld:
+    service: postgresql
+    state: enabled
+    permanent: yes
+    immediate: yes
+
+- name: Make Postgres listen on all network devices
+  lineinfile:
+    path: /var/lib/pgsql/data/postgresql.conf
+    regexp: '#listen_addresses'
+    line: "listen_addresses = '*'"
+    state: present
+
 - name: Start the PostgreSQL service
   systemd:
     enabled: yes
@@ -52,6 +66,12 @@
     name: "{{ pah_db_user | default('awx') }}"
     password: "{{ pah_db_pass }}"
     role_attr_flags: CREATEDB,NOSUPERUSER,CREATEROLE
+  become: yes
+  become_user: postgres
+
+- name: Create 'awx' database
+  postgresql_db:
+    name: awx
   become: yes
   become_user: postgres
 
