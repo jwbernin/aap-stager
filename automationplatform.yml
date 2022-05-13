@@ -1,0 +1,15 @@
+---
+- hosts: ansibledb
+  tasks: 
+    - name: Include the external DB role if applicable
+      include_role:
+        name: externaldb
+      when: not automation_platform_db_managed
+
+- hosts: ansiblecontroller
+  roles:
+    - aapcontroller
+
+- hosts: ansiblehub
+  roles:
+    - pah

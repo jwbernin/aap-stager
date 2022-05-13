@@ -1,0 +1,7 @@
+---
+# vars file for aapcontroller
+automation_platform_setup: 'CHANGEME'
+ansible_admin_pass: 'CHANGEME'
+pah_db_pass: 'CHANGEME'
+controller_reg_username: 'CHANGEME'
+controller_reg_password: 'CHANGEME'

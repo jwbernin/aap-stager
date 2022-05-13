@@ -1,0 +1,137 @@
+---
+# tasks file for aapcontroller
+- name: Ensure system fully updated
+  package:
+    name: '*'
+    state: latest
+
+- name: Generate SSH key
+  community.crypto.openssh_keypair:
+    path: /root/.ssh/id_ed25519
+    type: ed25519
+
+- name: Fetch new pubkey
+  fetch:
+    src: /root/.ssh/id_ed25519.pub
+    dest: "/tmp/sshkey-{{ inventory_hostname }}"
+    flat: yes
+
+- name: Fetch pubkey from database host if we're in a managed mode
+  fetch: 
+    src: /root/.ssh/id_ed25519.pub
+    dest: "/tmp/sshkey-{{ item }}"
+  delegate_to: "{{ item }}"
+  loop: "{{query('inventory_hostnames', 'ansibledb')}}"
+  when: automation_platform_db_managed
+
+- name: Authorize on all other controller hosts
+  ansible.posix.authorized_key:
+    user: root
+    state: present
+    key: "{{ lookup('file', '/tmp/sshkey-{{ item }}') }}"
+  loop: "{{query('inventory_hostnames', 'ansiblecontroller')}}"
+
+- name: Enable Automation Hub repo
+  community.general.rhsm_repository:
+    name: automation-hub-4.2-for-rhel-8-x86_64-rpms
+
+# This play will soon be replaced by a 'dnf' module installing the
+# installer bundle package.
+- name: Put the installer bundle into place on controller host 1 and unzip
+  unarchive:
+    src: "{{ automation_platform_setup }}.tar.gz"
+    creates: "/root/{{ automation_platform_setup }}/inventory"
+    dest: /root/
+  run_once: yes
+  
+- name: Remove the localhost line for automationcontroller from inventory
+  lineinfile:
+    line: "localhost ansible_connection=local"
+    state: absent
+    path: "/root/{{ automation_platform_setup }}/inventory"
+    backup: yes
+  run_once: yes
+
+- name: Ensure controller hosts present in inventory
+  lineinfile:
+    insertafter: '\[automationcontroller\]'
+    regexp: '^{{ item }}'
+    line: "{{ item }}"
+    state: present
+    path: "/root/{{ automation_platform_setup }}/inventory"
+    firstmatch: yes
+  loop: "{{query('inventory_hostnames', 'ansiblecontroller')}}"
+  run_once: yes
+
+- name: Ensure DB target host in database section
+  lineinfile:
+    insertafter: '[database]'
+    line: "{{query('inventory_hostnames', 'ansibledb')}}"
+    state: present
+    path: "/root/{{ automation_platform_setup }}/inventory"
+  when: automation_platform_db_managed
+  run_once: yes
+
+- name: Ensure admin password set
+  lineinfile:
+    regexp: '^admin_password'
+    line: "admin_password='{{ ansible_admin_pass }}'"
+    state: present
+    path: "/root/{{ automation_platform_setup }}/inventory"
+  run_once: yes
+
+- name: Ensure pg_host entry correct
+  lineinfile:
+    regexp: '^pg_host='
+    line: "pg_host='{{query('inventory_hostnames', 'ansibledb') | first }}'"
+    state: present
+    path: "/root/{{ automation_platform_setup }}/inventory"
+  run_once: yes
+
+- name: Ensure correct pg_port entry
+  lineinfile:
+    regexp: '^pg_port='
+    line: "pg_port='{{ automation_platform_db_port | default('5432') }}'"
+    state: present
+    path: "/root/{{ automation_platform_setup }}/inventory"
+  run_once: yes
+
+- name: Ensure correct pg_username entry
+  lineinfile:
+    regexp: '^pg_username='
+    line: "pg_username='{{ controller_db_user | default('awx') }}'"
+    state: present
+    path: "/root/{{ automation_platform_setup }}/inventory"
+  run_once: yes
+
+- name: Ensure correct pg_password entry
+  lineinfile:
+    regexp: '^pg_password='
+    line: "pg_password='{{ controller_db_pass }}'"
+    state: present
+    path: "/root/{{ automation_platform_setup }}/inventory"
+  run_once: yes
+
+- name: Ensure correct registry_username entry
+  lineinfile:
+    regexp: '^registry_username='
+    line: "registry_username='{{ controller_reg_username }}'"
+    state: present
+    path: "/root/{{ automation_platform_setup }}/inventory"
+  run_once: yes
+
+- name: Ensure correct registry_password entry
+  lineinfile:
+    regexp: '^registry_password='
+    line: "registry_password='{{ controller_reg_password }}'"
+    state: present
+    path: "/root/{{ automation_platform_setup }}/inventory"
+  run_once: yes
+
+- name: Clean up keys from tmp directory
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_fileglob:
+    - "/tmp/sshkey-*"
+

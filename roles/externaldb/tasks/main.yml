@@ -1,0 +1,61 @@
+---
+# tasks file for externaldb
+- name:  Ensure the PostgreSQL 12 module stream is enabled
+  dnf:
+    name: '@postgresql:12'
+    state: present
+
+- name: Ensure postgresql is installed
+  package:
+    name: postgresql
+    state: present
+
+- name: Run the postgres initdb script
+  command:
+    cmd: "postgresql-setup --initdb"
+    creates: /var/lib/pgsql/data/pg_hba.conf
+
+- name:
+  postgresql_pg_hba:
+    dest: /var/lib/pgsql/data/pg_hba.conf
+    contype: host
+    source: "{{ item }}"
+    method: md5
+  loop: "{{query('inventory_hostnames', 'ansiblecontroller:ansiblehub')}}"
+
+- name: Ensure Psycopg2 installed
+  package:
+    name: python3-psycopg2
+    state: present
+
+- name: Ensure system fully updated
+  package:
+    name: '*'
+    state: latest
+
+- name: Start the PostgreSQL service
+  systemd:
+    enabled: yes
+    name: postgresql
+    state: restarted
+
+- name: Add AAP Controller DB user to Postgres
+  postgresql_user:
+    name: "{{ controller_db_user | default('awx') }}"
+    password: "{{ controller_db_pass }}"
+    role_attr_flags: CREATEDB,NOSUPERUSER,CREATEROLE
+  become: yes
+  become_user: postgres
+
+- name: Add Private Automation Hub DB user to Postgres
+  postgresql_user:
+    name: "{{ pah_db_user | default('awx') }}"
+    password: "{{ pah_db_pass }}"
+    role_attr_flags: CREATEDB,NOSUPERUSER,CREATEROLE
+  become: yes
+  become_user: postgres
+
+- name: Generate SSH key pair
+  community.crypto.openssh_keypair:
+    path: /root/.ssh/id_ed25519
+    type: ed25519

@@ -1,0 +1,17 @@
+[ansiblecontroller]
+aap1.jbho.me ansible_user=root
+aap2.jbho.me ansible_user=root
+aap3.jbho.me ansible_user=root
+
+[ansiblehub]
+pah1.jbho.me ansible_user=root
+pah2.jbho.me ansible_user=root
+pah3.jbho.me ansible_user=root
+
+[ansibledb]
+aap-db.jbho.me ansible_user=root
+
+[automationplatform:children]
+ansiblecontroller
+ansiblehub
+ansibledb

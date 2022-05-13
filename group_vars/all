@@ -1,0 +1,10 @@
+automation_platform_db_managed: false
+automation_platform_setup: "ansible-automation-platform-setup-2.1.2-1"
+controller_db_user: "aapcontroller"
+controller_db_pass: "controllerpass"
+pah_db_user: "pahdbuser"
+pah_db_pass: "pahdbpass"
+ansible_admin_pass: "admin-password"
+controller_reg_username: 'rhsm-username'
+controller_reg_password: 'rhsm-password'
+
