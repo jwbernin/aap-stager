@@ -9,8 +9,8 @@ must have access to the automation hub repository
 
 ## Variables
 
+| Variable | Definition |
 | ---------- | -------- |
-
 | automation_platform_db_managed | If false, we will set up a PostgreSQL machine with the `externaldb` role. If true, we let the AAP installer set up PostgreSQL for us. |
 | automation_platform_setup | Base name of the installer bundle filename minus the `.tar.gz`. |
 | controller_db_user | An optional username to use for the Controller connections to PostgreSQL. |
