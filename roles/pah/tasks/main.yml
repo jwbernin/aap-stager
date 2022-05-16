@@ -1,5 +1,32 @@
 ---
 # tasks file for pah
+
+- name: Find number of hub hosts
+  set_fact:
+    clustered_mode: ("{{query('inventory_hostnames', 'ansiblehub')}}" | length > 1)
+
+# When in custered mode...
+- block:
+  - name: Ensure we shared /var/lib/pulp
+    assert:
+      that:
+        automation_hub_shared_pulp is defined
+
+  - name: Make sure /var/lib/pulp exists
+    file:
+      path: /var/lib/pulp
+      state: directory
+
+  - name: Ensure shared mount defined in fstab
+    ansible.posix.mount:
+      fstype: nfs
+      state: mounted
+      path: /var/lib/pulp
+      src: "{{ automation_hub_shared_pulp }}"
+
+  when:
+    clustered_mode|bool
+
 - name: Ensure system fully updated
   package:
     name: '*'
@@ -60,7 +87,7 @@
     state: present
     path: "/root/{{ automation_platform_setup }}/inventory"
     firstmatch: yes
-  loop: "{{query('inventory_hostnames', 'ansibler')}}"
+  loop: "{{query('inventory_hostnames', 'ansiblehub')}}"
   run_once: yes
 
 - name: Ensure DB target host in database section
@@ -74,40 +101,40 @@
 
 - name: Ensure admin password set
   lineinfile:
-    regexp: '^admin_password'
-    line: "admin_password='{{ ansible_admin_pass }}'"
+    regexp: '^automationhub_admin_password'
+    line: "automationhub_admin_password='{{ ansible_admin_pass }}'"
     state: present
     path: "/root/{{ automation_platform_setup }}/inventory"
   run_once: yes
 
 - name: Ensure pg_host entry correct
   lineinfile:
-    regexp: '^pg_host='
-    line: "pg_host='{{query('inventory_hostnames', 'ansibledb') | first }}'"
+    regexp: '^automationhub_pg_host='
+    line: "automationhub_pg_host='{{query('inventory_hostnames', 'ansibledb') | first }}'"
     state: present
     path: "/root/{{ automation_platform_setup }}/inventory"
   run_once: yes
 
 - name: Ensure correct pg_port entry
   lineinfile:
-    regexp: '^pg_port='
-    line: "pg_port='{{ automation_platform_db_port | default('5432') }}'"
+    regexp: '^automationhub_pg_port='
+    line: "automationhub_pg_port='{{ automation_platform_db_port | default('5432') }}'"
     state: present
     path: "/root/{{ automation_platform_setup }}/inventory"
   run_once: yes
 
 - name: Ensure correct pg_username entry
   lineinfile:
-    regexp: '^pg_username='
-    line: "pg_username='{{ pah_db_user | default('awx') }}'"
+    regexp: '^automationhub_pg_username='
+    line: "automationhub_pg_username='{{ pah_db_user | default('awx') }}'"
     state: present
     path: "/root/{{ automation_platform_setup }}/inventory"
   run_once: yes
 
 - name: Ensure correct pg_password entry
   lineinfile:
-    regexp: '^pg_password='
-    line: "pg_password='{{ pah_db_pass }}'"
+    regexp: '^automationhub_pg_password='
+    line: "automationhub_pg_password='{{ pah_db_pass }}'"
     state: present
     path: "/root/{{ automation_platform_setup }}/inventory"
   run_once: yes
